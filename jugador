@@ -1,0 +1,16 @@
+import java.awt.Color;
+
+public class Jugador extends Entidad {
+
+    public Jugador(int x, int y) {
+        super(x, y, 40, Color.RED);
+    }
+
+    public void mover(int dx, int dy, int ancho, int alto) {
+        // Limitar movimiento dentro de cancha (menos tamaño y márgenes)
+        int nx = x + dx;
+        int ny = y + dy;
+        if (nx >= 60 && nx <= ancho - 100) x = nx;
+        if (ny >= 60 && ny <= alto - 100) y = ny;
+    }
+}
