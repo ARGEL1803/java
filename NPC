@@ -1,0 +1,16 @@
+import java.awt.Color;
+
+public class NPC extends Entidad {
+
+    public NPC(int x, int y) {
+        super(x, y, 30, Color.BLUE);
+    }
+
+    public void moverHacia(Balon balon, int ancho, int alto) {
+        if (balon.x < x && x > 60) x--;
+        if (balon.x > x && x < ancho - 100) x++;
+
+        if (balon.y < y && y > 60) y--;
+        if (balon.y > y && y < alto - 100) y++;
+    }
+}
