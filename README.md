@@ -5,20 +5,14 @@ import java.util.Random;
 
 public class JuegoGrafico extends JPanel implements KeyListener, ActionListener {
 
-    // 🎮 Jugador
     int x = 100, y = 100;
     int size = 40;
     Color colorJugador = Color.RED;
 
-    // 🤖 NPC
     int npcX = 300, npcY = 200;
     int npcSize = 40;
-
-    // ⭐ Trofeo
     int trofeoX, trofeoY;
     int trofeoSize = 20;
-
-    // 📊 Contador
     int trofeos = 0;
     int TROFEOS_GANAR = 10;
 
@@ -36,8 +30,6 @@ public class JuegoGrafico extends JPanel implements KeyListener, ActionListener 
         timer = new Timer(150, this);
         timer.start();
     }
-
-    // 🎯 Generar trofeo en posición aleatoria
     private void generarTrofeo() {
         trofeoX = rand.nextInt(550);
         trofeoY = rand.nextInt(330);
@@ -76,14 +68,12 @@ public class JuegoGrafico extends JPanel implements KeyListener, ActionListener 
         g.drawString("Coordenadas: (" + x + ", " + y + ")", 10, 20);
         g.drawString("Trofeos: " + trofeos, 10, 40);
 
-        // 🏆 Pantalla final
         if (juegoTerminado) {
             g.setFont(new Font("Arial", Font.BOLD, 30));
             g.drawString("¡GANASTE!", getWidth()/2 - 80, getHeight()/2);
         }
     }
 
-    // 🎹 Movimiento jugador
     @Override
     public void keyPressed(KeyEvent e) {
 
@@ -96,13 +86,11 @@ public class JuegoGrafico extends JPanel implements KeyListener, ActionListener 
         if (tecla == KeyEvent.VK_A) x -= 10;
         if (tecla == KeyEvent.VK_D) x += 10;
 
-        // 💥 Colisión con trofeo
         if (Math.abs(x - trofeoX) < 30 && Math.abs(y - trofeoY) < 30) {
             trofeos++;
             generarTrofeo();
         }
 
-        // 🎯 Condición de victoria
         if (trofeos >= TROFEOS_GANAR) {
             juegoTerminado = true;
         }
@@ -112,8 +100,6 @@ public class JuegoGrafico extends JPanel implements KeyListener, ActionListener 
 
     @Override public void keyReleased(KeyEvent e) {}
     @Override public void keyTyped(KeyEvent e) {}
-
-    // 🤖 Movimiento NPC
     @Override
     public void actionPerformed(ActionEvent e) {
 
