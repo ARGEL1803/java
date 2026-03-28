@@ -1,0 +1,18 @@
+import java.awt.*;
+
+public class Entidad {
+    protected int x, y, size;
+    protected Color color;
+
+    public Entidad(int x, int y, int size, Color color) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.color = color;
+    }
+
+    public void dibujar(Graphics g) {
+        g.setColor(color);
+        g.fillOval(x, y, size, size);
+    }
+}
