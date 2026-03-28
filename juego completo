@@ -1,0 +1,211 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.Random;
+
+public class Juego extends JPanel implements KeyListener, ActionListener {
+
+    private Jugador jugador;
+    private NPC[] npcs;
+    private Balon balon;
+    private Timer timer;
+
+    private boolean juegoTerminado = false;
+    private int golesJugador = 0;
+    private int golesNPC = 0;
+
+    private final int ancho = 800;
+    private final int alto = 600;
+
+    // Portería izquierda y derecha (zonas de gol)
+    private Rectangle porteriaIzq = new Rectangle(50, alto/2 - 60, 30, 120);
+    private Rectangle porteriaDer = new Rectangle(ancho - 80, alto/2 - 60, 30, 120);
+
+    public Juego() {
+        setPreferredSize(new Dimension(ancho, alto));
+        setBackground(new Color(34, 139, 34));  // Cancha verde
+
+        jugador = new Jugador(100, alto/2);
+        balon = new Balon(ancho/2, alto/2);
+
+        npcs = new NPC[4];
+        Random rand = new Random();
+        for (int i = 0; i < npcs.length; i++) {
+            int x = rand.nextInt(ancho - 160) + 100;
+            int y = rand.nextInt(alto - 160) + 100;
+            npcs[i] = new NPC(x, y);
+        }
+
+        timer = new Timer(40, this);
+        timer.start();
+
+        setFocusable(true);
+        addKeyListener(this);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        // Dibujar cancha
+        g.setColor(new Color(0, 100, 0));
+        g.fillRect(50, 50, ancho - 100, alto - 100);
+
+        // Líneas de la cancha
+        g.setColor(Color.WHITE);
+        g.drawRect(50, 50, ancho - 100, alto - 100); // borde cancha
+        g.drawLine(ancho / 2, 50, ancho / 2, alto - 50); // línea media
+        g.drawOval(ancho / 2 - 75, alto / 2 - 75, 150, 150); // círculo medio
+
+        // Dibujar porterías
+        g.setColor(Color.WHITE);
+        g.fillRect(porteriaIzq.x, porteriaIzq.y, porteriaIzq.width, porteriaIzq.height);
+        g.fillRect(porteriaDer.x, porteriaDer.y, porteriaDer.width, porteriaDer.height);
+
+        // Dibujar jugadores, NPC y balón
+        jugador.dibujar(g);
+        for (NPC npc : npcs) {
+            npc.dibujar(g);
+        }
+        balon.dibujar(g);
+
+        // Mostrar coordenadas del jugador
+        g.setColor(Color.WHITE);
+        g.drawString("Coordenadas Jugador: (" + jugador.x + ", " + jugador.y + ")", 10, 20);
+
+        // Mostrar marcador
+        g.drawString("Goles Jugador: " + golesJugador + "   Goles NPC: " + golesNPC, 10, 40);
+
+        // Mensaje final
+        if (juegoTerminado) {
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            g.setColor(Color.YELLOW);
+            String msg = (golesJugador > golesNPC) ? "¡Ganaste!" : "¡Perdiste!";
+            g.drawString(msg, ancho / 2 - 150, alto / 2);
+            timer.stop();
+        }
+    }
+
+    // Movimiento jugador con teclado
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (juegoTerminado) return;
+
+        int key = e.getKeyCode();
+        int dx = 0, dy = 0;
+
+        if (key == KeyEvent.VK_W) dy = -10;
+        if (key == KeyEvent.VK_S) dy = 10;
+        if (key == KeyEvent.VK_A) dx = -10;
+        if (key == KeyEvent.VK_D) dx = 10;
+
+        jugador.mover(dx, dy, ancho, alto);
+        repaint();
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {}
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    // Lógica de movimiento NPC y colisiones
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (juegoTerminado) return;
+
+        // Los NPC se mueven hacia el balón
+        for (NPC npc : npcs) {
+            npc.moverHacia(balon, ancho, alto);
+        }
+
+        // Verificar colisión jugador-balon (jugador "empuja" el balón)
+        if (colision(jugador, balon)) {
+            // Mover balón en dirección del jugador
+            int dx = 0, dy = 0;
+            if (jugador.x < balon.x) dx = 5;
+            else if (jugador.x > balon.x) dx = -5;
+
+            if (jugador.y < balon.y) dy = 5;
+            else if (jugador.y > balon.y) dy = -5;
+
+            moverBalon(dx, dy);
+        }
+
+        // Verificar si balón entra en portería izquierda (gol NPC)
+        if (balon.x < porteriaIzq.x + porteriaIzq.width &&
+            balon.y > porteriaIzq.y &&
+            balon.y < porteriaIzq.y + porteriaIzq.height) {
+            golesNPC++;
+            reiniciarPosiciones();
+        }
+
+        // Verificar si balón entra en portería derecha (gol jugador)
+        if (balon.x + balon.size > porteriaDer.x &&
+            balon.y > porteriaDer.y &&
+            balon.y < porteriaDer.y + porteriaDer.height) {
+            golesJugador++;
+            reiniciarPosiciones();
+        }
+
+        // Verificar colisiones NPC-balon (si un NPC toca balón, empuja)
+        for (NPC npc : npcs) {
+            if (colision(npc, balon)) {
+                int dx = 0, dy = 0;
+                if (npc.x < balon.x) dx = 3;
+                else if (npc.x > balon.x) dx = -3;
+
+                if (npc.y < balon.y) dy = 3;
+                else if (npc.y > balon.y) dy = -3;
+
+                moverBalon(dx, dy);
+            }
+        }
+
+        // Finalizar juego si alguno llega a 5 goles
+        if (golesJugador >= 5 || golesNPC >= 5) {
+            juegoTerminado = true;
+        }
+
+        repaint();
+    }
+
+    private boolean colision(Entidad a, Entidad b) {
+        Rectangle r1 = new Rectangle(a.x, a.y, a.size, a.size);
+        Rectangle r2 = new Rectangle(b.x, b.y, b.size, b.size);
+        return r1.intersects(r2);
+    }
+
+    private void moverBalon(int dx, int dy) {
+        int nx = balon.x + dx;
+        int ny = balon.y + dy;
+
+        // Limitar balón dentro de cancha
+        if (nx >= 60 && nx <= ancho - 100) balon.x = nx;
+        if (ny >= 60 && ny <= alto - 100) balon.y = ny;
+    }
+
+    private void reiniciarPosiciones() {
+        jugador.x = 100;
+        jugador.y = alto / 2;
+        balon.x = ancho / 2;
+        balon.y = alto / 2;
+
+        Random rand = new Random();
+        for (NPC npc : npcs) {
+            npc.x = rand.nextInt(ancho - 160) + 100;
+            npc.y = rand.nextInt(alto - 160) + 100;
+        }
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Juego de Fútbol Simple");
+        Juego juego = new Juego();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.add(juego);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
