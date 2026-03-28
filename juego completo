@@ -17,13 +17,12 @@ public class Juego extends JPanel implements KeyListener, ActionListener {
     private final int ancho = 800;
     private final int alto = 600;
 
-    // Portería izquierda y derecha (zonas de gol)
     private Rectangle porteriaIzq = new Rectangle(50, alto/2 - 60, 30, 120);
     private Rectangle porteriaDer = new Rectangle(ancho - 80, alto/2 - 60, 30, 120);
 
     public Juego() {
         setPreferredSize(new Dimension(ancho, alto));
-        setBackground(new Color(34, 139, 34));  // Cancha verde
+        setBackground(new Color(34, 139, 34));
 
         jugador = new Jugador(100, alto/2);
         balon = new Balon(ancho/2, alto/2);
@@ -47,36 +46,27 @@ public class Juego extends JPanel implements KeyListener, ActionListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // Dibujar cancha
         g.setColor(new Color(0, 100, 0));
         g.fillRect(50, 50, ancho - 100, alto - 100);
 
-        // Líneas de la cancha
         g.setColor(Color.WHITE);
-        g.drawRect(50, 50, ancho - 100, alto - 100); // borde cancha
-        g.drawLine(ancho / 2, 50, ancho / 2, alto - 50); // línea media
-        g.drawOval(ancho / 2 - 75, alto / 2 - 75, 150, 150); // círculo medio
+        g.drawRect(50, 50, ancho - 100, alto - 100);
+        g.drawLine(ancho / 2, 50, ancho / 2, alto - 50);
+        g.drawOval(ancho / 2 - 75, alto / 2 - 75, 150, 150);
 
-        // Dibujar porterías
-        g.setColor(Color.WHITE);
         g.fillRect(porteriaIzq.x, porteriaIzq.y, porteriaIzq.width, porteriaIzq.height);
         g.fillRect(porteriaDer.x, porteriaDer.y, porteriaDer.width, porteriaDer.height);
 
-        // Dibujar jugadores, NPC y balón
         jugador.dibujar(g);
         for (NPC npc : npcs) {
             npc.dibujar(g);
         }
         balon.dibujar(g);
 
-        // Mostrar coordenadas del jugador
         g.setColor(Color.WHITE);
         g.drawString("Coordenadas Jugador: (" + jugador.x + ", " + jugador.y + ")", 10, 20);
-
-        // Mostrar marcador
         g.drawString("Goles Jugador: " + golesJugador + "   Goles NPC: " + golesNPC, 10, 40);
 
-        // Mensaje final
         if (juegoTerminado) {
             g.setFont(new Font("Arial", Font.BOLD, 48));
             g.setColor(Color.YELLOW);
@@ -86,7 +76,6 @@ public class Juego extends JPanel implements KeyListener, ActionListener {
         }
     }
 
-    // Movimiento jugador con teclado
     @Override
     public void keyPressed(KeyEvent e) {
         if (juegoTerminado) return;
@@ -105,64 +94,44 @@ public class Juego extends JPanel implements KeyListener, ActionListener {
 
     @Override
     public void keyReleased(KeyEvent e) {}
-
     @Override
     public void keyTyped(KeyEvent e) {}
 
-    // Lógica de movimiento NPC y colisiones
     @Override
     public void actionPerformed(ActionEvent e) {
         if (juegoTerminado) return;
 
-        // Los NPC se mueven hacia el balón
         for (NPC npc : npcs) {
             npc.moverHacia(balon, ancho, alto);
         }
 
-        // Verificar colisión jugador-balon (jugador "empuja" el balón)
         if (colision(jugador, balon)) {
-            // Mover balón en dirección del jugador
-            int dx = 0, dy = 0;
-            if (jugador.x < balon.x) dx = 5;
-            else if (jugador.x > balon.x) dx = -5;
-
-            if (jugador.y < balon.y) dy = 5;
-            else if (jugador.y > balon.y) dy = -5;
-
-            moverBalon(dx, dy);
+            balon.x = jugador.x + jugador.size/2 - balon.size/2;
+            balon.y = jugador.y + jugador.size/2 - balon.size/2;
         }
 
-        // Verificar si balón entra en portería izquierda (gol NPC)
         if (balon.x < porteriaIzq.x + porteriaIzq.width &&
-            balon.y > porteriaIzq.y &&
+            balon.y + balon.size > porteriaIzq.y &&
             balon.y < porteriaIzq.y + porteriaIzq.height) {
             golesNPC++;
             reiniciarPosiciones();
         }
 
-        // Verificar si balón entra en portería derecha (gol jugador)
         if (balon.x + balon.size > porteriaDer.x &&
-            balon.y > porteriaDer.y &&
+            balon.y + balon.size > porteriaDer.y &&
             balon.y < porteriaDer.y + porteriaDer.height) {
             golesJugador++;
             reiniciarPosiciones();
         }
 
-        // Verificar colisiones NPC-balon (si un NPC toca balón, empuja)
         for (NPC npc : npcs) {
             if (colision(npc, balon)) {
-                int dx = 0, dy = 0;
-                if (npc.x < balon.x) dx = 3;
-                else if (npc.x > balon.x) dx = -3;
-
-                if (npc.y < balon.y) dy = 3;
-                else if (npc.y > balon.y) dy = -3;
-
+                int dx = (npc.x < balon.x) ? 3 : -3;
+                int dy = (npc.y < balon.y) ? 3 : -3;
                 moverBalon(dx, dy);
             }
         }
 
-        // Finalizar juego si alguno llega a 5 goles
         if (golesJugador >= 5 || golesNPC >= 5) {
             juegoTerminado = true;
         }
@@ -179,8 +148,6 @@ public class Juego extends JPanel implements KeyListener, ActionListener {
     private void moverBalon(int dx, int dy) {
         int nx = balon.x + dx;
         int ny = balon.y + dy;
-
-        // Limitar balón dentro de cancha
         if (nx >= 60 && nx <= ancho - 100) balon.x = nx;
         if (ny >= 60 && ny <= alto - 100) balon.y = ny;
     }
